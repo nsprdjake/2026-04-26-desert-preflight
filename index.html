@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desert Preflight — Print Artwork Rescue Tool</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0f14;
+  --surface: #161923;
+  --surface2: #1e2230;
+  --accent: #f0a848;
+  --accent2: #e85d75;
+  --accent3: #6ec6c8;
+  --text: #e8e4df;
+  --text-dim: #8a8680;
+  --text-bright: #fff;
+  --green: #4ade80;
+  --yellow: #facc15;
+  --orange: #fb923c;
+  --red: #f87171;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,.45);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Desert night background ─────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(240,168,72,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(110,198,200,.06) 0%, transparent 50%),
+    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(232,93,117,.05) 0%, transparent 50%),
+    var(--bg);
+}
+
+/* ── Stars ────────────────────────────────────────── */
+.stars {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.stars span {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: .15; } 100% { opacity: .7; } }
+
+/* ── Layout ──────────────────────────────────────── */
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+/* ── Header ──────────────────────────────────────── */
+.header {
+  text-align: center;
+  padding: 40px 0 32px;
+}
+.header h1 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .tagline {
+  color: var(--text-dim);
+  font-size: .95rem;
+  margin-top: 6px;
+  letter-spacing: .02em;
+}
+.header .desert-icon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(240,168,72,.4));
+}
+
+/* ── Cards ───────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  transition: transform .2s, box-shadow .2s;
+}
+.card:hover { transform: translateY(-1px); box-shadow: 0 6px 32px rgba(0,0,0,.5); }
+.card h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card h2 .icon { font-size: 1.2rem; }
+
+/* ── Upload Zone ─────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed rgba(240,168,72,.35);
+  border-radius: var(--radius);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .25s, background .25s;
+  position: relative;
+  overflow: hidden;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(240,168,72,.06);
+}
+.upload-zone .upload-icon { font-size: 2.8rem; margin-bottom: 12px; }
+.upload-zone p { color: var(--text-dim); font-size: .9rem; }
+.upload-zone .or { color: var(--text-dim); margin: 12px 0; font-size: .8rem; }
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ── Buttons ─────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-family: var(--font);
+  font-size: .88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #e89530);
+  color: #1a1200;
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost {
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.1);
+}
+.btn-ghost:hover { background: rgba(255,255,255,.1); }
+.btn-sm { padding: 6px 14px; font-size: .8rem; }
+
+/* ── Preset Chips ────────────────────────────────── */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.preset-chip {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.preset-chip:hover { border-color: var(--accent); color: var(--accent); }
+.preset-chip.active {
+  background: rgba(240,168,72,.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Form Inputs ─────────────────────────────────── */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.input-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.input-group { display: flex; flex-direction: column; gap: 4px; }
+.input-group label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.input-group input, .input-group select {
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: .9rem;
+  font-family: var(--font);
+  transition: border-color .2s;
+}
+.input-group input:focus, .input-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.input-group select { cursor: pointer; }
+.input-group select option { background: var(--surface); }
+
+/* ── Score Meter ─────────────────────────────────── */
+.score-section { text-align: center; padding: 30px 20px; }
+.score-ring {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 20px;
+}
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .track {
+  fill: none;
+  stroke: rgba(255,255,255,.06);
+  stroke-width: 10;
+}
+.score-ring .fill {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .4s;
+}
+.score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.score-value .number {
+  font-size: 2.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.score-value .label {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 4px;
+  color: var(--text-dim);
+}
+.score-grade {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.score-subtitle { color: var(--text-dim); font-size: .88rem; }
+
+/* ── Dimension Cards ─────────────────────────────── */
+.dim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+.dim-card {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+}
+.dim-card .dim-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  font-family: var(--mono);
+}
+.dim-card .dim-label {
+  font-size: .7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-top: 4px;
+}
+
+/* ── Warnings / Tips ─────────────────────────────── */
+.alert {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  font-size: .88rem;
+  line-height: 1.5;
+  align-items: flex-start;
+}
+.alert .alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+.alert-warn { background: rgba(251,146,60,.1); border-left: 3px solid var(--orange); }
+.alert-danger { background: rgba(248,113,113,.1); border-left: 3px solid var(--red); }
+.alert-info { background: rgba(110,198,200,.08); border-left: 3px solid var(--accent3); }
+.alert-ok { background: rgba(74,222,128,.08); border-left: 3px solid var(--green); }
+
+/* ── Explanation Box ─────────────────────────────── */
+.explanation-box {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  font-size: .9rem;
+  line-height: 1.65;
+  color: var(--text);
+  position: relative;
+  white-space: pre-line;
+}
+.explanation-box .copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+/* ── Rescue Plan ─────────────────────────────────── */
+.rescue-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .88rem;
+}
+.rescue-item:last-child { border-bottom: none; }
+.rescue-item .rescue-icon { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+.rescue-item strong { color: var(--text-bright); }
+
+/* ── Demo Mode ───────────────────────────────────── */
+.demo-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 0 10px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.demo-strip::-webkit-scrollbar { display: none; }
+.demo-card {
+  flex: 0 0 auto;
+  width: 120px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.06);
+  transition: all .2s;
+}
+.demo-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.demo-card .demo-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.demo-card .demo-name { font-size: .72rem; color: var(--text-dim); font-weight: 500; }
+
+/* ── Preview Thumb ───────────────────────────────── */
+.preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+}
+.preview-strip img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,.08);
+}
+.preview-info { flex: 1; min-width: 0; }
+.preview-info .name {
+  font-weight: 600;
+  font-size: .88rem;
+  color: var(--text-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-info .meta { font-size: .78rem; color: var(--text-dim); }
+.preview-strip .remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+  transition: color .2s;
+}
+.preview-strip .remove-btn:hover { color: var(--red); }
+
+/* ── Utilities ───────────────────────────────────── */
+.hidden { display: none !important; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.text-center { text-align: center; }
+.fade-in { animation: fadeIn .4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.slide-up { animation: slideUp .5s cubic-bezier(.4,0,.2,1); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Footer ──────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 32px 0 0;
+  color: var(--text-dim);
+  font-size: .75rem;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .container { padding: 16px 12px 60px; }
+  .header { padding: 28px 0 24px; }
+  .card { padding: 18px; }
+  .upload-zone { padding: 28px 16px; }
+  .input-row.three { grid-template-columns: 1fr 1fr; }
+  .dim-grid { grid-template-columns: 1fr 1fr; }
+  .score-ring { width: 150px; height: 150px; }
+  .score-value .number { font-size: 2.2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Stars background -->
+<div class="stars" id="stars"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="desert-icon">🌵</div>
+    <h1>Desert Preflight</h1>
+    <p class="tagline">Artwork rescue for small-business print jobs</p>
+  </header>
+
+  <!-- Demo Mode -->
+  <div class="card fade-in" id="demoCard">
+    <h2><span class="icon">🎲</span> Try a Demo</h2>
+    <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:12px;">Tap a sample to see how the preflight works — no upload needed.</p>
+    <div class="demo-strip" id="demoStrip"></div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card fade-in">
+    <h2><span class="icon">📁</span> Upload Artwork</h2>
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">🏜️</div>
+      <p><strong style="color:var(--text-bright)">Drop your artwork here</strong></p>
+      <p class="or">— or tap to browse —</p>
+      <p>JPG, PNG, WebP, GIF</p>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/gif">
+    </div>
+    <!-- Preview (shown after upload) -->
+    <div class="preview-strip hidden" id="previewStrip">
+      <img id="previewThumb" src="" alt="Preview">
+      <div class="preview-info">
+        <div class="name" id="previewName"></div>
+        <div class="meta" id="previewMeta"></div>
+      </div>
+      <button class="remove-btn" id="removeBtn" title="Remove">✕</button>
+    </div>
+  </div>
+
+  <!-- Print Size -->
+  <div class="card fade-in">
+    <h2><span class="icon">📐</span> Print Size</h2>
+    <div class="presets" id="presetContainer"></div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>Width (inches)</label>
+        <input type="number" id="printW" min="0.5" max="240" step="0.125" value="3.5">
+      </div>
+      <div class="input-group">
+        <label>Height (inches)</label>
+        <input type="number" id="printH" min="0.5" max="240" step="0.125" value="2">
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>Viewing Distance</label>
+        <select id="viewDist">
+          <option value="near" selected>Near (handheld)</option>
+          <option value="arm">Arm's length</option>
+          <option value="wall">Wall / poster</option>
+          <option value="far">Far (banner/sign)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Bleed (inches)</label>
+        <input type="number" id="bleed" min="0" max="1" step="0.0625" value="0.125">
+      </div>
+    </div>
+    <div class="mt-12">
+      <button class="btn btn-primary" id="analyzeBtn" disabled>🔍 Analyze Artwork</button>
+    </div>
+  </div>
+
+  <!-- Results (hidden until analysis) -->
+  <div id="results" class="hidden">
+
+    <!-- Score -->
+    <div class="card slide-up" id="scoreCard">
+      <div class="score-section">
+        <div class="score-ring">
+          <svg viewBox="0 0 180 180" width="100%" height="100%">
+            <circle class="track" cx="90" cy="90" r="78"></circle>
+            <circle class="fill" id="scoreFill" cx="90" cy="90" r="78"></circle>
+          </svg>
+          <div class="score-value">
+            <div class="number" id="scoreNumber">—</div>
+            <div class="label">DPI Score</div>
+          </div>
+        </div>
+        <div class="score-grade" id="scoreGrade"></div>
+        <div class="score-subtitle" id="scoreSubtitle"></div>
+      </div>
+      <div class="dim-grid" id="dimGrid"></div>
+    </div>
+
+    <!-- Warnings -->
+    <div class="card slide-up" id="alertsCard">
+      <h2><span class="icon">⚡</span> Findings</h2>
+      <div id="alertsContainer"></div>
+    </div>
+
+    <!-- Client-Safe Explanation -->
+    <div class="card slide-up" id="explainCard">
+      <h2><span class="icon">💬</span> Client-Safe Explanation</h2>
+      <div class="explanation-box" id="explanationBox">
+        <button class="btn btn-ghost btn-sm copy-btn" id="copyBtn">📋 Copy</button>
+        <span id="explanationText"></span>
+      </div>
+    </div>
+
+    <!-- Rescue Plan -->
+    <div class="card slide-up" id="rescueCard">
+      <h2><span class="icon">🛟</span> Rescue Plan</h2>
+      <div id="rescueContainer"></div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    Desert Preflight &middot; 100% local, nothing uploaded anywhere<br>
+    Built for <a href="#">Inspired Design</a> &middot; Palm Springs, CA
+  </footer>
+
+</div>
+
+<script>
+/* ── Config ───────────────────────────────────────── */
+const PRESETS = [
+  { name: 'Business Card', w: 3.5, h: 2, icon: '💳' },
+  { name: 'Postcard 4×6', w: 6, h: 4, icon: '✉️' },
+  { name: 'Flyer 8.5×11', w: 8.5, h: 11, icon: '📄' },
+  { name: 'Poster 11×17', w: 11, h: 17, icon: '📋' },
+  { name: 'Poster 18×24', w: 18, h: 24, icon: '🖼️' },
+  { name: 'Banner 2×6 ft', w: 24, h: 72, icon: '🏗️' },
+  { name: 'Custom', w: null, h: null, icon: '✏️' },
+];
+
+const DEMOS = [
+  { name: 'Logo (low-res)', w: 400, h: 400, preset: 0, icon: '🎯', bg: 'linear-gradient(135deg,#e85d75,#f0a848)' },
+  { name: 'Photo (hi-res)', w: 4032, h: 3024, preset: 2, icon: '📸', bg: 'linear-gradient(135deg,#6ec6c8,#4a90d9)' },
+  { name: 'Social graphic', w: 1080, h: 1080, preset: 1, icon: '📱', bg: 'linear-gradient(135deg,#a855f7,#e85d75)' },
+  { name: 'Banner art', w: 2400, h: 600, preset: 5, icon: '🎨', bg: 'linear-gradient(135deg,#f0a848,#4ade80)' },
+  { name: 'Tiny icon', w: 64, h: 64, preset: 0, icon: '🔍', bg: 'linear-gradient(135deg,#f87171,#fb923c)' },
+];
+
+/* Minimum DPI thresholds by viewing distance */
+const DPI_THRESHOLDS = {
+  near: { excellent: 300, usable: 200, risky: 120 },
+  arm:  { excellent: 200, usable: 150, risky: 100 },
+  wall: { excellent: 150, usable: 100, risky: 72 },
+  far:  { excellent: 72,  usable: 50,  risky: 36 },
+};
+
+/* ── State ────────────────────────────────────────── */
+let imageData = null;   // { w, h, name, size, src, isDemo }
+let activePreset = 0;
+
+/* ── DOM refs ─────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const uploadZone = $('uploadZone');
+const fileInput = $('fileInput');
+const previewStrip = $('previewStrip');
+const previewThumb = $('previewThumb');
+const previewName = $('previewName');
+const previewMeta = $('previewMeta');
+const removeBtn = $('removeBtn');
+const printW = $('printW');
+const printH = $('printH');
+const viewDist = $('viewDist');
+const bleed = $('bleed');
+const analyzeBtn = $('analyzeBtn');
+const results = $('results');
+
+/* ── Stars ────────────────────────────────────────── */
+(function initStars() {
+  const container = $('stars');
+  for (let i = 0; i < 80; i++) {
+    const s = document.createElement('span');
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 60 + '%';
+    s.style.animationDelay = (Math.random() * 4) + 's';
+    s.style.animationDuration = (2 + Math.random() * 3) + 's';
+    if (Math.random() > .7) { s.style.width = '3px'; s.style.height = '3px'; }
+    container.appendChild(s);
+  }
+})();
+
+/* ── Presets ───────────────────────────────────────── */
+(function initPresets() {
+  const container = $('presetContainer');
+  PRESETS.forEach((p, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'preset-chip' + (i === 0 ? ' active' : '');
+    chip.textContent = p.icon + ' ' + p.name;
+    chip.addEventListener('click', () => selectPreset(i));
+    container.appendChild(chip);
+  });
+})();
+
+function selectPreset(i) {
+  activePreset = i;
+  document.querySelectorAll('.preset-chip').forEach((c, j) => c.classList.toggle('active', j === i));
+  const p = PRESETS[i];
+  if (p.w !== null) {
+    printW.value = p.w;
+    printH.value = p.h;
+    /* Auto-select viewing distance based on size */
+    const area = p.w * p.h;
+    if (area > 500) viewDist.value = 'far';
+    else if (area > 150) viewDist.value = 'wall';
+    else if (area > 30) viewDist.value = 'arm';
+    else viewDist.value = 'near';
+  }
+}
+
+/* ── Demos ─────────────────────────────────────────── */
+(function initDemos() {
+  const strip = $('demoStrip');
+  DEMOS.forEach((d, i) => {
+    const card = document.createElement('div');
+    card.className = 'demo-card';
+    card.innerHTML = `
+      <div class="demo-thumb" style="background:${d.bg}">${d.icon}</div>
+      <div class="demo-name">${d.name}<br>${d.w}×${d.h}px</div>
+    `;
+    card.addEventListener('click', () => loadDemo(i));
+    strip.appendChild(card);
+  });
+})();
+
+function loadDemo(i) {
+  const d = DEMOS[i];
+  imageData = { w: d.w, h: d.h, name: d.name + '.jpg', size: Math.round(d.w * d.h * 0.3), src: null, isDemo: true };
+  selectPreset(d.preset);
+  showPreview();
+}
+
+/* ── File Upload ──────────────────────────────────── */
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    imageData = { w: img.naturalWidth, h: img.naturalHeight, name: file.name, size: file.size, src: url, isDemo: false };
+    showPreview();
+  };
+  img.src = url;
+}
+
+function showPreview() {
+  if (!imageData) return;
+  if (imageData.src) {
+    previewThumb.src = imageData.src;
+  } else {
+    previewThumb.src = 'data:image/svg+xml,' + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="8" fill="#1e2230"/><text x="32" y="38" text-anchor="middle" fill="#f0a848" font-size="24">🎲</text></svg>`
+    );
+  }
+  previewName.textContent = imageData.name;
+  previewMeta.textContent = `${imageData.w} × ${imageData.h} px  ·  ${formatBytes(imageData.size)}`;
+  previewStrip.classList.remove('hidden');
+  uploadZone.classList.add('hidden');
+  analyzeBtn.disabled = false;
+  results.classList.add('hidden');
+}
+
+removeBtn.addEventListener('click', () => {
+  if (imageData && imageData.src && !imageData.isDemo) URL.revokeObjectURL(imageData.src);
+  imageData = null;
+  fileInput.value = '';
+  previewStrip.classList.add('hidden');
+  uploadZone.classList.remove('hidden');
+  analyzeBtn.disabled = true;
+  results.classList.add('hidden');
+});
+
+/* ── Analysis ─────────────────────────────────────── */
+analyzeBtn.addEventListener('click', runAnalysis);
+
+function runAnalysis() {
+  if (!imageData) return;
+  const pw = parseFloat(printW.value) || 3.5;
+  const ph = parseFloat(printH.value) || 2;
+  const bl = parseFloat(bleed.value) || 0;
+  const dist = viewDist.value;
+  const totalW = pw + bl * 2;
+  const totalH = ph + bl * 2;
+
+  const dpiW = imageData.w / totalW;
+  const dpiH = imageData.h / totalH;
+  const effectiveDpi = Math.min(dpiW, dpiH);
+
+  const thresholds = DPI_THRESHOLDS[dist];
+  let grade, gradeColor, score;
+
+  if (effectiveDpi >= thresholds.excellent) {
+    grade = 'Excellent';
+    gradeColor = 'var(--green)';
+    score = Math.min(100, Math.round(70 + 30 * Math.min(effectiveDpi / thresholds.excellent, 2) / 2));
+  } else if (effectiveDpi >= thresholds.usable) {
+    grade = 'Usable';
+    gradeColor = 'var(--yellow)';
+    score = Math.round(45 + 25 * (effectiveDpi - thresholds.usable) / (thresholds.excellent - thresholds.usable));
+  } else if (effectiveDpi >= thresholds.risky) {
+    grade = 'Risky';
+    gradeColor = 'var(--orange)';
+    score = Math.round(20 + 25 * (effectiveDpi - thresholds.risky) / (thresholds.usable - thresholds.risky));
+  } else {
+    grade = 'Rescue Needed';
+    gradeColor = 'var(--red)';
+    score = Math.max(2, Math.round(20 * effectiveDpi / thresholds.risky));
+  }
+
+  /* Aspect ratio analysis */
+  const imgRatio = imageData.w / imageData.h;
+  const printRatio = totalW / totalH;
+  const ratioMismatch = Math.abs(imgRatio - printRatio) / Math.max(imgRatio, printRatio);
+  const ratioPct = Math.round(ratioMismatch * 100);
+
+  /* Megapixels */
+  const mp = (imageData.w * imageData.h / 1e6).toFixed(1);
+
+  /* Build results */
+  results.classList.remove('hidden');
+
+  /* Score meter — reset then animate */
+  const circumference = 2 * Math.PI * 78;
+  const scoreFill = $('scoreFill');
+  scoreFill.style.transition = 'none';
+  scoreFill.style.strokeDasharray = circumference;
+  scoreFill.style.strokeDashoffset = circumference;
+  scoreFill.style.stroke = gradeColor;
+  scoreFill.getBoundingClientRect(); // force reflow
+  scoreFill.style.transition = 'stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .4s';
+  setTimeout(() => {
+    scoreFill.style.strokeDashoffset = circumference - (circumference * score / 100);
+  }, 50);
+  $('scoreNumber').textContent = Math.round(effectiveDpi);
+  $('scoreNumber').style.color = gradeColor;
+  $('scoreGrade').textContent = grade;
+  $('scoreGrade').style.color = gradeColor;
+
+  const distNames = { near: 'handheld', arm: "arm's length", wall: 'wall viewing', far: 'far viewing' };
+  $('scoreSubtitle').textContent = `Effective DPI for ${distNames[dist]} at ${pw}″×${ph}″`;
+
+  /* Dimension cards */
+  $('dimGrid').innerHTML = [
+    { v: `${imageData.w}×${imageData.h}`, l: 'Image Pixels' },
+    { v: `${mp} MP`, l: 'Megapixels' },
+    { v: `${pw}″×${ph}″`, l: 'Print Size' },
+    { v: `${totalW.toFixed(2)}″×${totalH.toFixed(2)}″`, l: 'With Bleed' },
+    { v: Math.round(dpiW) + ' / ' + Math.round(dpiH), l: 'DPI (W / H)' },
+    { v: Math.round(effectiveDpi), l: 'Effective DPI' },
+  ].map(d => `<div class="dim-card"><div class="dim-value">${d.v}</div><div class="dim-label">${d.l}</div></div>`).join('');
+
+  /* Alerts */
+  const alerts = [];
+
+  if (effectiveDpi >= thresholds.excellent) {
+    alerts.push({ type: 'ok', icon: '✅', text: `Resolution looks great for this print size and viewing distance (${Math.round(effectiveDpi)} DPI).` });
+  } else if (effectiveDpi >= thresholds.usable) {
+    alerts.push({ type: 'info', icon: 'ℹ️', text: `Resolution is acceptable but not ideal (${Math.round(effectiveDpi)} DPI). Fine detail may look soft. Recommended: ${thresholds.excellent}+ DPI.` });
+  } else if (effectiveDpi >= thresholds.risky) {
+    alerts.push({ type: 'warn', icon: '⚠️', text: `Resolution is low (${Math.round(effectiveDpi)} DPI). Print will show visible pixelation. Target: ${thresholds.excellent}+ DPI.` });
+  } else {
+    alerts.push({ type: 'danger', icon: '🚨', text: `Resolution is critically low (${Math.round(effectiveDpi)} DPI). This will look obviously pixelated at print size. Need ${thresholds.excellent}+ DPI.` });
+  }
+
+  if (ratioPct > 10) {
+    alerts.push({ type: 'warn', icon: '📐', text: `Aspect ratio mismatch (~${ratioPct}%). Image is ${imgRatio > printRatio ? 'wider' : 'taller'} than the print area — will need cropping or white space.` });
+  }
+
+  if (bl === 0 && (pw <= 12)) {
+    alerts.push({ type: 'info', icon: '✂️', text: 'No bleed set. Most commercial print needs 0.125″ bleed on all sides to avoid white edges when trimmed.' });
+  }
+
+  /* RGB/CMYK heuristic — all browser images are RGB */
+  alerts.push({ type: 'info', icon: '🎨', text: 'This file is RGB (all browser images are). Ask your printer if they need CMYK conversion — colors may shift, especially bright blues and greens.' });
+
+  /* Small text heuristic: if DPI is low and it might be a design (not a photo) */
+  if (effectiveDpi < 200 && imageData.w < 2000) {
+    alerts.push({ type: 'warn', icon: '🔤', text: 'If this artwork contains text, it may appear blurry at this DPI. Text needs higher resolution than photos to look crisp.' });
+  }
+
+  /* File size heuristic */
+  if (!imageData.isDemo && imageData.size < 100000 && effectiveDpi < 200) {
+    alerts.push({ type: 'warn', icon: '📦', text: 'Small file size suggests heavy compression. Even upscaling won’t recover lost detail.' });
+  }
+
+  /* Oversized for task */
+  if (effectiveDpi > 600 && dist === 'near') {
+    alerts.push({ type: 'info', icon: '📏', text: `At ${Math.round(effectiveDpi)} DPI, this file is much larger than needed. You could reduce it for faster processing without quality loss.` });
+  }
+
+  $('alertsContainer').innerHTML = alerts.map(a =>
+    `<div class="alert alert-${a.type}"><span class="alert-icon">${a.icon}</span><div>${a.text}</div></div>`
+  ).join('');
+
+  /* Client-safe explanation */
+  let explain = '';
+  if (grade === 'Excellent') {
+    explain = `Great news — your artwork is high enough quality to print beautifully at ${pw}″ × ${ph}″. No changes needed on the image side. Just make sure your printer has it in the format they prefer.`;
+  } else if (grade === 'Usable') {
+    explain = `Your artwork can be printed at ${pw}″ × ${ph}″, but it's not ideal resolution. It'll look fine from a normal viewing distance, but very fine details or small text might look slightly soft. If you have a higher-resolution version, that would be better.`;
+  } else if (grade === 'Risky') {
+    explain = `Your artwork is a bit small for printing at ${pw}″ × ${ph}″. At this size, you'd start to see some blurriness or pixelation, especially on text and sharp edges. I'd recommend either:\n\n• Sending a higher-resolution file if you have one\n• Printing at a smaller size (up to about ${getMaxPrintSize(imageData.w, imageData.h, thresholds.usable)} would look better)\n• Letting me run it through an AI upscaler to improve it`;
+  } else {
+    explain = `Unfortunately, this artwork is too low-resolution to print at ${pw}″ × ${ph}″ without noticeable quality loss. The image would look pixelated and blurry.\n\nHere's what we can do:\n\n• If you have the original design file (AI, PSD, PDF), I can export a higher-res version\n• I can print it smaller — up to about ${getMaxPrintSize(imageData.w, imageData.h, thresholds.usable)} would be acceptable\n• I can try AI upscaling, which works well for photos but less so for logos/text\n• If this is a logo, it might be worth recreating it as a vector file`;
+  }
+
+  if (ratioPct > 10) {
+    explain += `\n\nAlso heads up — the shape of your image doesn't quite match the ${pw}″ × ${ph}″ print area, so we'd need to either crop some of the image or add some blank space on the edges.`;
+  }
+
+  $('explanationText').textContent = explain;
+
+  /* Rescue plan */
+  const rescues = [];
+
+  if (grade !== 'Excellent') {
+    const maxSize = getMaxPrintSize(imageData.w, imageData.h, thresholds.excellent);
+    rescues.push({ icon: '📏', text: `<strong>Resize the print.</strong> This image would look excellent at ${maxSize} or smaller.` });
+  }
+
+  if (effectiveDpi < thresholds.usable) {
+    rescues.push({ icon: '🤖', text: '<strong>AI upscaling.</strong> Tools like Topaz Gigapixel or free alternatives (upscayl.org) can double or quadruple resolution. Works best on photos; less effective on text/logos.' });
+  }
+
+  if (effectiveDpi < thresholds.excellent) {
+    rescues.push({ icon: '📂', text: '<strong>Request the original.</strong> Ask the client for the source file — AI/PSD/PDF/SVG will give you much better output than a rasterized export.' });
+  }
+
+  if (ratioPct > 10) {
+    rescues.push({ icon: '✂️', text: `<strong>Crop or pad.</strong> The aspect ratio is off by ~${ratioPct}%. Either crop to fit (losing some content) or add a background/border to fill the space.` });
+  }
+
+  if (bl === 0 && pw <= 12) {
+    rescues.push({ icon: '🔲', text: '<strong>Add bleed.</strong> Extend the artwork 0.125″ past the trim line on all sides. This prevents white edges when the printer trims.' });
+  }
+
+  rescues.push({ icon: '🎨', text: '<strong>Check color mode.</strong> If printing offset or on a commercial digital press, convert to CMYK in Photoshop/Illustrator. Expect some color shift on vivid blues, greens, and oranges.' });
+
+  if (imageData.w === imageData.h && pw !== ph) {
+    rescues.push({ icon: '🔄', text: '<strong>Rotation check.</strong> Your image is square but the print isn\'t — make sure the orientation is correct before sending to press.' });
+  }
+
+  if (effectiveDpi < 150) {
+    rescues.push({ icon: '🖨️', text: '<strong>Choose the right paper.</strong> On lower-res files, uncoated/textured paper hides imperfections better than glossy. Talk to your printer about stock options.' });
+  }
+
+  $('rescueContainer').innerHTML = rescues.map(r =>
+    `<div class="rescue-item"><span class="rescue-icon">${r.icon}</span><div>${r.text}</div></div>`
+  ).join('');
+
+  /* Scroll to results */
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── Copy to Clipboard ────────────────────────────── */
+$('copyBtn').addEventListener('click', async () => {
+  const text = $('explanationText').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copyBtn').textContent = '✅ Copied!';
+    setTimeout(() => $('copyBtn').textContent = '📋 Copy', 2000);
+  } catch {
+    /* Fallback */
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    $('copyBtn').textContent = '✅ Copied!';
+    setTimeout(() => $('copyBtn').textContent = '📋 Copy', 2000);
+  }
+});
+
+/* ── Helpers ──────────────────────────────────────── */
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function getMaxPrintSize(imgW, imgH, targetDpi) {
+  const maxW = imgW / targetDpi;
+  const maxH = imgH / targetDpi;
+  if (maxW < 1 && maxH < 1) return `${maxW.toFixed(2)}″ × ${maxH.toFixed(2)}″`;
+  return `${maxW.toFixed(1)}″ × ${maxH.toFixed(1)}″`;
+}
+</script>
+</body>
+</html>
